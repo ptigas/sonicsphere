@@ -1,6 +1,9 @@
 // WiFly libraries
+//#include <WProgram.h>
 #include <WiFlyHQ.h>
 #include <SoftwareSerial.h>
+#include <Streaming.h>
+#include "WiFlySerial.h"
 
 // Arduino Wire library is required if I2Cdev I2CDEV_ARDUINO_WIRE implementation
 // is used in I2Cdev.h
@@ -51,21 +54,9 @@ typedef struct {
 
 PACKET packet;
 
-/*
-
-WIFLY CONNECTIONS
-
-wifly pin 10 -> GND
-widly pin 1 -> 3.3V
-wifly pin 2 (tx) -> 8 pin arduino
-wifly pin 3 (rx) -> 9 pin arduino
-
-*/
-
-// Set wifly to 8 and 9 pins
-SoftwareSerial wifiSerial(8,9);
-
-WiFly wifly;
+int bluetoothRx = 4;  // RX-I pin of bluetooth mate, Arduino D3
+int bluetoothTx = 5;  // TX-O pin of bluetooth mate, Arduino D2
+SoftwareSerial bluetooth(bluetoothTx, bluetoothRx);
 
 // ================================================================
 // ===               INTERRUPT DETECTION ROUTINE                ===
@@ -76,12 +67,6 @@ void dmpDataReady() {
     mpuInterrupt = true;
 }
 
-/* Change these to match your WiFi network */
-const char mySSID[] = "SKY0883A";
-const char myPassword[] = "PBPCYEAP";
-
-const char site[] = "192.168.0.3";
-
 void terminal();
 
 void setup()
@@ -91,9 +76,11 @@ void setup()
     Serial.begin(115200);
     while (!Serial); // wait for Leonardo enumeration, others continue immediately
     
+    // set the data rate for the SoftwareSerial port
+    bluetooth.begin( 115200 );
+    
     Serial.println("Starting");
     Serial.print("Free memory: ");
-    Serial.println(wifly.getFreeMemory(),DEC);
     
     // join I2C bus (I2Cdev library doesn't do this automatically)
     Wire.begin();
@@ -117,58 +104,10 @@ void setup()
     // wait for ready
     Serial.println(F("\nSend any character to begin DMP programming and demo: "));
     while (Serial.available() && Serial.read()); // empty buffer
-//    while (!Serial.available());                 // wait for data
-//    while (Serial.available() && Serial.read()); // empty buffer again    
-    
-    // load and configure the DMP
+
+    // load and configure the DMPDM
     Serial.println(F("Initializing DMP..."));
     devStatus = mpu.dmpInitialize();
-
-    wifiSerial.begin(9600);
-    if (!wifly.begin(&wifiSerial, &Serial)) {
-        Serial.println("Failed to start wifly");
-	terminal();
-    }
-
-    /* Join wifi network if not already associated */
-    if (!wifly.isAssociated()) {
-	/* Setup the WiFly to connect to a wifi network */
-	Serial.println("Joining network");
-	wifly.setSSID(mySSID);
-	wifly.setPassphrase(myPassword);
-	wifly.enableDHCP();
-
-	if (wifly.join()) {
-	    Serial.println("Joined wifi network");
-	} else {
-	    Serial.println("Failed to join wifi network");
-	    terminal();
-	}
-    } else {
-        Serial.println("Already joined network");
-    }
-
-    //terminal();
-
-    Serial.print("MAC: ");
-    Serial.println(wifly.getMAC(buf, sizeof(buf)));
-    Serial.print("IP: ");
-    Serial.println(wifly.getIP(buf, sizeof(buf)));
-    Serial.print("Netmask: ");
-    Serial.println(wifly.getNetmask(buf, sizeof(buf)));
-    Serial.print("Gateway: ");
-    Serial.println(wifly.getGateway(buf, sizeof(buf)));
-
-    wifly.setDeviceID("Wifly-WebClient");
-    Serial.print("DeviceID: ");
-    Serial.println(wifly.getDeviceID(buf, sizeof(buf)));
-
-    if (wifly.isConnected()) {
-        Serial.println("Old connection active. Closing");
-	wifly.close();
-    }
-    
-    // WiFly has been connected. Now initialize MPU
     
     // make sure it worked (returns 0 if so)
     if (devStatus == 0) {
@@ -195,11 +134,11 @@ void setup()
         Serial.print(F("DMP Initialization failed (code "));
         Serial.print(devStatus);
         Serial.println(F(")"));
+        
+        bluetooth.print(F("RUNNING..."));
+        Serial.print(F("RUNNING..."));
     }
     
-    wifly.setIpProtocol(WIFLY_PROTOCOL_UDP);	
-    wifly.setHost("192.168.0.3", 1123);
-     
     // configure LED for output
     pinMode(LED_PIN, OUTPUT);
 }
@@ -208,7 +147,7 @@ void setup()
 // ===                    MAIN PROGRAM LOOP                     ===
 // ================================================================
 
-void loop() {
+void loop() {  
     // if programming failed, don't try to do anything
     if (!dmpReady) return;
 
@@ -237,8 +176,9 @@ void loop() {
     if ((mpuIntStatus & 0x10) || fifoCount == 1024) {
         // reset so we can continue cleanly
         mpu.resetFIFO();
+        bluetooth.println(F("FIFO overflow!"));
         Serial.println(F("FIFO overflow!"));
-
+        
     // otherwise, check for DMP data ready interrupt (this should happen frequently)
     } else if (mpuIntStatus & 0x02) {
         // wait for correct available data length, should be a VERY short wait
@@ -272,27 +212,11 @@ void loop() {
         packet.counter++;
         uint8_t cast_packet[sizeof(packet)];
         memcpy(cast_packet, &packet, sizeof(packet));
-
-//        Serial.write(cast_packet, sizeof(packet));
-        wifly.write(cast_packet, sizeof(packet));
         
+        bluetooth.write(cast_packet, sizeof(packet));
+        Serial.write(cast_packet, sizeof(packet));
         // blink LED to indicate activity
         blinkState = !blinkState;
         digitalWrite(LED_PIN, blinkState);
-    }
-}
-
-/* Connect the WiFly serial to the serial monitor. */
-void terminal()
-{
-    while (1) {
-	if (wifly.available() > 0) {
-	    Serial.write(wifly.read());
-	}
-
-
-	if (Serial.available() > 0) {
-	    wifly.write(Serial.read());
-	}
     }
 }
