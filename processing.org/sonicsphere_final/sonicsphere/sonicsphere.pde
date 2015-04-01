@@ -1,4 +1,5 @@
 // Sonicsphere 
+// 6/20/2012 by Jeff Rowberg <jeff@rowberg.net>
 // 1/1/2014 by Panagiotis Tigas <ptigas@gmail.com>
 
 /* ============================================
