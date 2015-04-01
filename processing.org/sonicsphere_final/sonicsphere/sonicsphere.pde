@@ -385,29 +385,26 @@ class Icosahedron extends Shape3D{
 
         float min_i = 0;
         float min_d = 100000000;
-        for ( int i = 0; i < triangles.length; i++ )
+        for (int i=0; i<triangles.length; i++ )
         {
-            t = triangles[i][0];          
-            cx = vertices[t][0];
-            cy = vertices[t][1];
-            cz = vertices[t][2];
-
-            t = triangles[i][2];          
-            cx += vertices[t][0];
-            cy += vertices[t][1];
-            cz += vertices[t][2];
-
-            t = triangles[i][1];          
-            cx += vertices[t][0];
-            cy += vertices[t][1];
-            cz += vertices[t][2];
-
+            cx = 0;
+            cy = 0;
+            cz = 0;
+            for (int j = 0; j < 3; j++)
+            {
+                t = triangles[i][j];          
+                cx += vertices[t][0];
+                cy += vertices[t][1];
+                cz += vertices[t][2];
+            }
+	    
             float[] sc = cartesian2spherical( cx/3, cy/3, cz/3 );
             float[] xyz = spherical2cartesian( sc[0], sc[1], radius );
 
             d = sqrt( (cx/3-ray.x)*(cx/3-ray.x) + 
                     (cy/3-ray.y)*(cy/3-ray.y) + 
                     (cz/3-ray.z)*(cz/3-ray.z) );
+        
             if ( d < min_d )
             {
                 min_d = d;
@@ -420,7 +417,7 @@ class Icosahedron extends Shape3D{
         {
             beginShape( TRIANGLES );
 
-            // Check if there is a chosen surfance and broadcast the osc message.
+            // Check if there is a selected surfance and broadcast the osc message.
             if ( i == min_i )
             {
                 fill(255, 255, 0, 200);
@@ -431,26 +428,19 @@ class Icosahedron extends Shape3D{
             } else {
                 fill(255, 0, 0, 200);              
             }
-
-            t = triangles[i][0];
-            vertex(vertices[t][0], vertices[t][1], vertices[t][2]);
-            cx = vertices[t][0];
-            cy = vertices[t][1];
-            cz = vertices[t][2];
-
-            t = triangles[i][2];
-            vertex(vertices[t][0], vertices[t][1], vertices[t][2]);
-            cx += vertices[t][0];
-            cy += vertices[t][1];
-            cz += vertices[t][2];
-
-            t = triangles[i][1];
-            vertex(vertices[t][0], vertices[t][1], vertices[t][2]);
-            cx += vertices[t][0];
-            cy += vertices[t][1];
-            cz += vertices[t][2];
-
+            
             endShape();
+
+            cx = 0;
+            cy = 0;
+            cz = 0;
+            for (int j = 0; j < 3; j++)
+            {
+                t = triangles[i][j];          
+                cx += vertices[t][0];
+                cy += vertices[t][1];
+                cz += vertices[t][2];
+            }
 
             float[] sc = cartesian2spherical( cx/3, cy/3, cz/3 );
             float[] xyz = spherical2cartesian( sc[0], sc[1], radius );
