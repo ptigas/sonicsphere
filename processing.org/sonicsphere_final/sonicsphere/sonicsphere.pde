@@ -28,47 +28,44 @@ import processing.serial.*;
 import processing.opengl.*;
 import toxi.geom.*;
 import toxi.processing.*;
-
 import fullscreen.*; 
-SoftFullScreen fs; 
-
 import oscP5.*;
 import netP5.*;
 
 import controlP5.*;
 
-//////////////////////////
+// Set this to true to go fullscreen
 boolean FULLSCREEN = false;
-//////////////////////////
 
 boolean sketchFullScreen() {
     return FULLSCREEN;
 }
-
-Client bluetooth;
-
-ControlP5 cp5;
-
-OscP5 oscP5;
-NetAddress location;
 
 // NOTE: requires ToxicLibs to be installed in order to run properly.
 // 1. Download from http://toxiclibs.org/downloads
 // 2. Extract into [userdir]/Processing/libraries
 //    (location may be different on Mac/Linux)
 // 3. Run and bask in awesomeness
-
 ToxiclibsSupport gfx;
 
 Icosahedron ico;
 
 int packetSize = 20;
 
-Serial port = null;                         // The serial port
-char[] teapotPacket = new char[packetSize];  // InvenSense Teapot packet
-int serialCount = 0;                 // current packet byte position
+// The serial port
+Serial port = null;
+// InvenSense Teapot packet
+char[] teapotPacket = new char[packetSize];  
+// current packet byte position
+int serialCount = 0;
 int aligned = 0;
 int interval = 0;
+
+SoftFullScreen fs; 
+Client bluetooth;
+ControlP5 cp5;
+OscP5 oscP5;
+NetAddress location;
 
 float[] q = new float[4];
 Quaternion quat = new Quaternion(1, 0, 0, 0);
@@ -81,7 +78,7 @@ float[] ypr = new float[3];
 
 public void init() {
     // call PApplet.init() to take care of business
-    super.init();   
+    super.init();
 }
 
 Slider2D s;
@@ -298,18 +295,12 @@ void draw() {
     vertex(0, 0, 0);
     vertex(vr.x*500, vr.y*500, vr.z*500);
     endShape();
-
-    //sphereDetail(30, 30);
-    //sphere(200);    
     ico.create(vr);
-
     popMatrix();
     lights();
 }
 
 boolean read_intro = false;
-
-
 
 class Icosahedron extends Shape3D{  
     float phi;
@@ -429,6 +420,7 @@ class Icosahedron extends Shape3D{
         {
             beginShape( TRIANGLES );
 
+            // Check if there is a chosen surfance and broadcast the osc message.
             if ( i == min_i )
             {
                 fill(255, 255, 0, 200);
@@ -457,8 +449,6 @@ class Icosahedron extends Shape3D{
             cx += vertices[t][0];
             cy += vertices[t][1];
             cz += vertices[t][2];
-
-
 
             endShape();
 
