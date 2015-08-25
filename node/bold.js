@@ -1,10 +1,10 @@
 
+var btSerial = new (require('bluetooth-serial-port')).BluetoothSerialPort(),
+    _ = require('underscore'),
+    toxi = require('toxiclibsjs'),
+    osc = require('node-osc'),
+    settings = require('./settings.js');
 
-var btSerial = new (require('bluetooth-serial-port')).BluetoothSerialPort();
-var _ = require('underscore');
-var toxi = require('toxiclibsjs');
-var osc = require('node-osc');
-var sleep = require('sleep');
 var default_port = 11234;
 
 var osc_client = new osc.Client('127.0.0.1', default_port); 
@@ -39,31 +39,33 @@ io.on('connection', function (socket) {
 
 var data_received = false;
 btSerial.on('found', function(address, name) {
-    console.log(address + " " + name);
-    btSerial.findSerialPortChannel(address, function(channel) {
-        btSerial.connect(address, channel, function() {
-            console.log('connected');
+    if (name == "RN42-B1AC" || name == "RN42-B792") {
+        console.log(address + " " + name);
+        btSerial.findSerialPortChannel(address, function(channel) {
+            btSerial.connect(address, channel, function() {
+                console.log('connected');
 
-            serialCount = 0;
-            aligned = 0;
-            read_intro = false;
-            teapotPacket = [];
+                serialCount = 0;
+                aligned = 0;
+                read_intro = false;
+                teapotPacket = [];
 
-            btSerial.on('data', function(buffer) {
-                data_received = true;
+                btSerial.on('data', function(buffer) {
+                    data_received = true;
 
-                _.map(buffer, align);
-                //console.log(buffer.toString('utf-8'));
+                    _.map(buffer, align);
+                    //console.log(buffer.toString('utf-8'));
+                });
+            }, function () {
+                console.log('cannot connect');
             });
-        }, function () {
-            console.log('cannot connect');
-        });
 
-        // close the connection when you're ready
-        btSerial.close();
-    }, function() {
-        console.log('found nothing');
-    });
+            // close the connection when you're ready
+            btSerial.close();
+        }, function() {
+            console.log('found nothing');
+        });
+    }
 });
 
 // current packet byte position
