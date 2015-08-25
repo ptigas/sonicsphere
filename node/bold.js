@@ -5,16 +5,23 @@ var btSerial = new (require('bluetooth-serial-port')).BluetoothSerialPort(),
     osc = require('node-osc'),
     settings = require('./settings.js');
 
-var default_port = 11234;
+// Start the OSC client
+var osc_client = new osc.Client(settings.osc.host, settings.osc.port); 
 
-var osc_client = new osc.Client('127.0.0.1', default_port); 
+// Globals related to sphere gyro
+var serialCount = 0;
+var aligned = 0;
+var read_intro = false;
 
-// WEB VIEW
+var teapotPacket = [];
+var packetSize = 20;
+
+// Start the web view
 var app = require('http').createServer(handler)
 var io = require('socket.io')(app);
 var fs = require('fs');
 
-app.listen(3000);
+app.listen(settings.view_port);
 
 function handler (req, res) {
   fs.readFile(__dirname + '/view.html',
@@ -36,10 +43,10 @@ io.on('connection', function (socket) {
   });
 });
 
-
+// Set up the bluetooth
 var data_received = false;
 btSerial.on('found', function(address, name) {
-    if (name == "RN42-B1AC" || name == "RN42-B792") {
+    if (_.contains(settings.whitelist, name)) {
         console.log(address + " " + name);
         btSerial.findSerialPortChannel(address, function(channel) {
             btSerial.connect(address, channel, function() {
@@ -52,9 +59,7 @@ btSerial.on('found', function(address, name) {
 
                 btSerial.on('data', function(buffer) {
                     data_received = true;
-
                     _.map(buffer, align);
-                    //console.log(buffer.toString('utf-8'));
                 });
             }, function () {
                 console.log('cannot connect');
@@ -68,17 +73,8 @@ btSerial.on('found', function(address, name) {
     }
 });
 
-// current packet byte position
-serialCount = 0;
-aligned = 0;
-read_intro = false;
-
-teapotPacket = [];
-packetSize = 20;
-
+// Packet alignment
 function align(ch) {
-    // print((char)ch);
-    // wait until you read $. then force align
     if ( !read_intro && ch == "$".charCodeAt(0) ) {
         read_intro = true;
         aligned = 0;
@@ -96,7 +92,7 @@ function align(ch) {
         } else if (serialCount == packetSize-1) {
             if (ch == "\n".charCodeAt(0)) aligned++; else aligned = 0;
         }
-        //print((char)ch);
+
         serialCount++;
         if (serialCount == packetSize) serialCount = 0;
     } else {
@@ -111,7 +107,6 @@ function align(ch) {
 }
 
 var Quaternion = new toxi.geom.Quaternion();
-
 function process_packet(quat) {
     var q = [];
 
