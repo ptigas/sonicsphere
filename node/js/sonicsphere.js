@@ -1,5 +1,3 @@
-//"use strict";
-
 var nodejs_mode = false;
 if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
   nodejs_mode = true;
@@ -10,6 +8,10 @@ if (nodejs_mode) {
 }
 
 (function(THREE) {
+
+  /*
+   * Helper to compute centroid of facet
+   */
   function compute_centroid(facet, vertices) {    
     var va = vertices[facet.a];
     var vb = vertices[facet.b];
@@ -22,6 +24,9 @@ if (nodejs_mode) {
     );
   }
 
+  /*
+   * External point used for raycasting
+   */ 
   var external_point = new THREE.Vector3(-200, -200, 100);
 
   /*
@@ -58,12 +63,13 @@ if (nodejs_mode) {
     THREE.IcosahedronGeometry.prototype = Object.create( THREE.Geometry.prototype );
     THREE.IcosahedronGeometry.prototype.constructor = THREE.IcosahedronGeometry;
 
-    this.geometry = new THREE.IcosahedronGeometry( 100 );
-    this.material =  new THREE.MeshLambertMaterial({  
+    // geometry and mesh    
+    material =  new THREE.MeshLambertMaterial({  
       shading: THREE.FlatShading,
       vertexColors: THREE.FaceColors
     });
-    this.mesh = new THREE.Mesh( this.geometry, this.material );
+    this.geometry = new THREE.IcosahedronGeometry( 100 );
+    this.mesh = new THREE.Mesh( this.geometry, material );
 
     this.setRotationFromQuaternion = function(a, b, c, d) {
       var q = new THREE.Quaternion(a, b, c, d);      
@@ -92,7 +98,7 @@ if (nodejs_mode) {
         this.geometry.faces[min_f].color.setHex( 0xffff00 ); 
         this.geometry.colorsNeedUpdate = true;
       } else {
-        //console.log(min_dist);
+        return min_f;
       }
     }
   }    

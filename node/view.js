@@ -59,9 +59,6 @@ function init() {
 	// ray	
 	scene.add(line);
 
-	// add mesh to scene
-	//scene.add(mesh);	
-
 	// lights
 	light = new THREE.DirectionalLight( 0xffffff );
 	light.position.set( 1, 1, 1 );
@@ -74,7 +71,8 @@ function init() {
 	light = new THREE.AmbientLight( 0x222222 );
 	scene.add( light );
 
-	scene.add(sphere());
+	// add sphere
+	// scene.add(sphere());
 
 	// renderer
 	renderer = new THREE.WebGLRenderer( { antialias: false } );
@@ -91,13 +89,11 @@ function init() {
 	stats.domElement.style.zIndex = 100;
 	container.appendChild( stats.domElement );
 
-	//
+	// some events
 	window.addEventListener( 'mousedown', onDocumentMouseDown, false );
 	window.addEventListener( 'touchstart', onDocumentTouchStart, false );
 	window.addEventListener( 'touchmove', onDocumentTouchMove, false );
-
 	window.addEventListener( 'resize', onWindowResize, false );
-	//
 
 	// change colors of facets
 	render();
