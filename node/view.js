@@ -25,6 +25,8 @@ THREE.IcosahedronGeometry = function ( radius, detail ) {
   };
 };
 
+var external_point = new THREE.Vector3(-200, -200, 100);
+
 THREE.IcosahedronGeometry.prototype = Object.create( THREE.Geometry.prototype );
 THREE.IcosahedronGeometry.prototype.constructor = THREE.IcosahedronGeometry;
 
@@ -47,31 +49,98 @@ var windowHalfX = window.innerWidth / 2;
 var windowHalfY = window.innerHeight / 2;
 
 var geometry = new THREE.IcosahedronGeometry( 100 );
-var material =  new THREE.MeshLambertMaterial( { color:0xffffff, shading: THREE.FlatShading } );
-
+var material =  new THREE.MeshLambertMaterial({
+	//color:0xff0000, 
+	shading: THREE.FlatShading,
+	vertexColors: THREE.FaceColors
+});
 var mesh = new THREE.Mesh( geometry, material );
+
+// line
+var line_material = new THREE.LineBasicMaterial({
+        color: 0xff0000,
+        linewidth: 3,
+        fog: true
+    });
+var line_geometry = new THREE.Geometry();    
+line_geometry.vertices.push(new THREE.Vector3(0, 0, 0));
+line_geometry.vertices.push(external_point);
+var line = new THREE.Line(line_geometry, line_material);
 
 var rotMult = 1.0;
 
 var axis = new THREE.Vector3();
 var angle = 0.0;
 
+function compute_centroid(facet) {
+	var vertices = geometry.vertices;
+	var va = vertices[facet.a];
+	var vb = vertices[facet.b];
+	var vc = vertices[facet.c];
+
+	return new THREE.Vector3(
+		(va.x + vb.x + vc.x)/3,
+		(va.y + vb.y + vc.y)/3,
+		(va.z + vb.z + vc.z)/3
+	);
+}
+
+function ray_casting() {
+	var min_dist, min_f = null;
+
+	for ( f = 0, fl = geometry.faces.length ; f < fl; f ++ ) {
+		//console.log(faces[f]);
+		//geometry.faces[f].color.setHex( Math.random() * 0xff0000 );			
+		var centroid = compute_centroid(geometry.faces[f])
+		centroid.applyMatrix4(mesh.matrixWorld);
+		var dist = centroid.distanceTo(external_point);
+
+		
+		if (min_f == null || min_dist > dist) {
+			min_dist = dist;
+			min_f = f;
+		}		
+
+		geometry.faces[f].color.setHex( 0xff0000 );
+		//var v = mesh.matrixWorld.multiplyVector3(centroid);		
+
+		//console.log(v);
+		//console.log(centroid);
+		//break;
+	}
+
+	geometry.faces[min_f].color.setHex( 0xffff00 );	
+	geometry.colorsNeedUpdate = true;
+}
+
 init();
 animate();
+
+function sphere() {
+	var geometry = new THREE.SphereGeometry( 5, 32, 32 );
+	var material = new THREE.MeshBasicMaterial( {color: 0xff0000, vertexColors: THREE.FaceColors} );
+	var sphere = new THREE.Mesh( geometry, material );
+	sphere.position.copy(external_point);
+	return sphere;
+}
 
 function init() {	
 	camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 1000 );
 	camera.position.z = 500;
-	// world
 
+	// world
 	scene = new THREE.Scene();
-	scene.fog = new THREE.FogExp2( 0xcccccc, 0.002 );
+	scene.fog = new THREE.FogExp2( 0xcccccc, 0.0018 );
 	
 	scene.add( mesh );
 
+	// ray	
+	scene.add(line);
+
+	// add mesh to scene
+	//scene.add(mesh);	
 
 	// lights
-
 	light = new THREE.DirectionalLight( 0xffffff );
 	light.position.set( 1, 1, 1 );
 	scene.add( light );
@@ -83,9 +152,9 @@ function init() {
 	light = new THREE.AmbientLight( 0x222222 );
 	scene.add( light );
 
+	scene.add(sphere());
 
 	// renderer
-
 	renderer = new THREE.WebGLRenderer( { antialias: false } );
 	renderer.setClearColor( scene.fog.color );
 	renderer.setPixelRatio( window.devicePixelRatio );
@@ -107,6 +176,11 @@ function init() {
 
 	window.addEventListener( 'resize', onWindowResize, false );
 	//
+
+	// change colors of facets	
+	for ( f = 0, fl = geometry.faces.length; f < fl; f ++ ) {
+		geometry.faces[f].color.setHex( 0xff0000 );
+	}
 
 	render();
 }
@@ -183,13 +257,12 @@ function onWindowResize() {
 	renderer.setSize( window.innerWidth, window.innerHeight );
 
 	render();
-
 }
 
 function animate() {
 	requestAnimationFrame( animate );	
 
-	console.log(axis);
+	//console.log(axis);
 	axis.x = targetRotationY;
 	axis.y = targetRotationX;
 
@@ -202,8 +275,13 @@ function animate() {
 	q.setFromAxisAngle( axis, 1);
 	mesh.setRotationFromQuaternion(q);
 
+	// ray casting
+	ray_casting();
+
 	renderer.render( scene, camera );	
 	stats.update();	
+
+	//console.log(mesh.matrixWorld);
 }
 
 function render() {	
