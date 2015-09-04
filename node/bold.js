@@ -1,11 +1,14 @@
+//"use strict";
 
 var btSerial = new (require('bluetooth-serial-port')).BluetoothSerialPort(),
     _ = require('underscore'),
     toxi = require('toxiclibsjs'),
     osc = require('node-osc'),
-    settings = require('./settings.js'),
+    settings = require('./settings.js'),    
     express = require('express'),
-    fs = require('fs');
+    fs = require('fs'),
+    THREE = require('three'),
+    sonicsphere = require('./js/sonicsphere.js');
 
 // Silly args parsing
 var record = false;
@@ -51,6 +54,11 @@ app.use(express.static('.'));
 var server = require('http').createServer(app)
 server.listen(settings.view_port);
 
+// create Icosahedron
+var icosahedron = new sonicsphere.Icosahedron();
+
+console.log(icosahedron);
+
 function handler (req, res) {
   fs.readFile(__dirname + '/view.html',
   function (err, data) {
@@ -70,6 +78,8 @@ io.on('connection', function (socket) {
     console.log(data);
   });
 });
+
+icosahedron.rayCasting();
 
 if (!playback) {
     // Set up the bluetooth
@@ -201,6 +211,8 @@ function process_packet(quat) {
     osc_client.send('/accel', ax, ay, az, function (err) {});
 
     var axis = Quaternion.toAxisAngle();
+
+    icosahedron.setRotationFromQuaternion(q[0], q[1], q[2], q[3]);
 
     osc_client.send('/note', Math.ceil(axis[0]%7 + axis[1]%7 + axis[2]%7), function (err) {});
 

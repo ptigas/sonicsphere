@@ -1,34 +1,5 @@
-THREE.IcosahedronGeometry = function ( radius, detail ) {
-
-  var t = ( 1 + Math.sqrt( 5 ) ) / 2;
-
-  var vertices = [
-    - 1,  t,  0,    1,  t,  0,   - 1, - t,  0,    1, - t,  0,
-     0, - 1,  t,    0,  1,  t,    0, - 1, - t,    0,  1, - t,
-     t,  0, - 1,    t,  0,  1,   - t,  0, - 1,   - t,  0,  1
-  ];
-
-  var indices = [
-     0, 11,  5,    0,  5,  1,    0,  1,  7,    0,  7, 10,    0, 10, 11,
-     1,  5,  9,    5, 11,  4,   11, 10,  2,   10,  7,  6,    7,  1,  8,
-     3,  9,  4,    3,  4,  2,    3,  2,  6,    3,  6,  8,    3,  8,  9,
-     4,  9,  5,    2,  4, 11,    6,  2, 10,    8,  6,  7,    9,  8,  1
-  ];
-
-  THREE.PolyhedronGeometry.call( this, vertices, indices, radius, detail );
-
-  this.type = 'IcosahedronGeometry';
-
-  this.parameters = {
-    radius: radius,
-    detail: detail
-  };
-};
-
-var external_point = new THREE.Vector3(-200, -200, 100);
-
-THREE.IcosahedronGeometry.prototype = Object.create( THREE.Geometry.prototype );
-THREE.IcosahedronGeometry.prototype.constructor = THREE.IcosahedronGeometry;
+var icosahedron = new window.Icosahedron();
+var external_point = window.ExternalPoint;
 
 var container, stats;
 
@@ -48,15 +19,12 @@ var mouseYOnMouseDown = 0;
 var windowHalfX = window.innerWidth / 2;
 var windowHalfY = window.innerHeight / 2;
 
-var geometry = new THREE.IcosahedronGeometry( 100 );
-var material =  new THREE.MeshLambertMaterial({
-	//color:0xff0000, 
-	shading: THREE.FlatShading,
-	vertexColors: THREE.FaceColors
-});
-var mesh = new THREE.Mesh( geometry, material );
+var rotMult = 1.0;
 
-// line
+var axis = new THREE.Vector3();
+var angle = 0.0;
+
+// ray of the raycaster
 var line_material = new THREE.LineBasicMaterial({
         color: 0xff0000,
         linewidth: 3,
@@ -66,52 +34,6 @@ var line_geometry = new THREE.Geometry();
 line_geometry.vertices.push(new THREE.Vector3(0, 0, 0));
 line_geometry.vertices.push(external_point);
 var line = new THREE.Line(line_geometry, line_material);
-
-var rotMult = 1.0;
-
-var axis = new THREE.Vector3();
-var angle = 0.0;
-
-function compute_centroid(facet) {
-	var vertices = geometry.vertices;
-	var va = vertices[facet.a];
-	var vb = vertices[facet.b];
-	var vc = vertices[facet.c];
-
-	return new THREE.Vector3(
-		(va.x + vb.x + vc.x)/3,
-		(va.y + vb.y + vc.y)/3,
-		(va.z + vb.z + vc.z)/3
-	);
-}
-
-function ray_casting() {
-	var min_dist, min_f = null;
-
-	for ( f = 0, fl = geometry.faces.length ; f < fl; f ++ ) {
-		//console.log(faces[f]);
-		//geometry.faces[f].color.setHex( Math.random() * 0xff0000 );			
-		var centroid = compute_centroid(geometry.faces[f])
-		centroid.applyMatrix4(mesh.matrixWorld);
-		var dist = centroid.distanceTo(external_point);
-
-		
-		if (min_f == null || min_dist > dist) {
-			min_dist = dist;
-			min_f = f;
-		}		
-
-		geometry.faces[f].color.setHex( 0xff0000 );
-		//var v = mesh.matrixWorld.multiplyVector3(centroid);		
-
-		//console.log(v);
-		//console.log(centroid);
-		//break;
-	}
-
-	geometry.faces[min_f].color.setHex( 0xffff00 );	
-	geometry.colorsNeedUpdate = true;
-}
 
 init();
 animate();
@@ -132,7 +54,7 @@ function init() {
 	scene = new THREE.Scene();
 	scene.fog = new THREE.FogExp2( 0xcccccc, 0.0018 );
 	
-	scene.add( mesh );
+	scene.add( icosahedron.mesh );
 
 	// ray	
 	scene.add(line);
@@ -177,11 +99,7 @@ function init() {
 	window.addEventListener( 'resize', onWindowResize, false );
 	//
 
-	// change colors of facets	
-	for ( f = 0, fl = geometry.faces.length; f < fl; f ++ ) {
-		geometry.faces[f].color.setHex( 0xff0000 );
-	}
-
+	// change colors of facets
 	render();
 }
 
@@ -273,10 +191,10 @@ function animate() {
 //	q.setFromAxisAngle( axis, angle );
 //	q.set(1 + targetRotation, 1, 1, 1).normalize();
 	q.setFromAxisAngle( axis, 1);
-	mesh.setRotationFromQuaternion(q);
+	icosahedron.mesh.setRotationFromQuaternion(q);
 
 	// ray casting
-	ray_casting();
+	icosahedron.rayCasting();
 
 	renderer.render( scene, camera );	
 	stats.update();	
