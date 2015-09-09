@@ -14,6 +14,7 @@ var record_file = "";
 var playback = false;
 var playback_file = "";
 var bluetooth_on = true;
+var debug = false;
 process.argv.forEach(function (val, index, array) {
     if (val == '--record') {
         record_file = array[index+1];
@@ -30,7 +31,18 @@ process.argv.forEach(function (val, index, array) {
         console.log('Blutooth turned off')
         bluetooth_on = false;
     }
+
+    if (val == "--debug") {
+        debug = true;
+    }
 });
+
+// simple debug function
+function print_debug(msg) {
+    if (debug) {
+        console.log(msg);
+    }
+}
 
 // Start the OSC client
 var osc_client = new osc.Client(settings.osc.host, settings.osc.port); 
@@ -115,6 +127,7 @@ if (!playback) {
 
     // Packet alignment
     function align(ch) {
+        console.log(ch);
         if ( !read_intro && ch == "$".charCodeAt(0) ) {
             read_intro = true;
             aligned = 0;
@@ -138,29 +151,28 @@ if (!playback) {
         } else {
             if (serialCount > 0 || ch == "$".charCodeAt(0)) {
                 teapotPacket[serialCount++] = ch;
-                if (serialCount == packetSize) {
-                    console.log("test");
+                if (serialCount == packetSize) {                    
                     process_packet(teapotPacket);
                     serialCount = 0;
                 }
             }
-        }
-
-        console.log("searching");
-        btSerial.inquire();
-        function check_connectivity() {
-            if (data_received == false) {        
-                console.log("restart.");
-                btSerial.close();
-                process.exit();
-            }
-            data_received = false;
-            setTimeout(check_connectivity, 1000); // 1 second
-        }
-        setTimeout(check_connectivity, 1000); // 1 second    
+        }  
     }    
+
+    console.log("searching");
+    btSerial.inquire();
+    function check_connectivity() {
+        if (data_received == false) {        
+            console.log("restart.");
+            btSerial.close();
+            process.exit();
+        }
+        data_received = false;
+        setTimeout(check_connectivity, 1000); // 1 second
+    }
+    setTimeout(check_connectivity, 1000); // 1 second  
 } else {
-      _playback();
+    _playback();
 }
 
 function _playback() {
@@ -179,7 +191,7 @@ function _playback() {
 
 
 var Quaternion = new toxi.geom.Quaternion();
-function process_packet(quat) {
+function process_packet(quat) {    
     var q = [];
 
     if (record) {
@@ -214,6 +226,8 @@ function process_packet(quat) {
 
     // map the facet of the icosahedron to a note
     osc_client.send('/note', index, function (err) {});
+    
+    print_debug("note: " + index);
 
     io.emit('q', { for: 'everyone', a: [ax, ay, az], q: q});
 }
