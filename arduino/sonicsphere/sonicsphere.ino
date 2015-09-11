@@ -76,7 +76,7 @@ void setup()
     Serial.begin(115200);
     while (!Serial); // wait for Leonardo enumeration, others continue immediately
     
-    bluetooth.begin( 57600 );
+    bluetooth.begin( 115200 );
     
     
     Serial.println("Starting");
@@ -177,7 +177,7 @@ void loop() {
         // reset so we can continue cleanly
         mpu.resetFIFO();
         bluetooth.println(F("FIFO overflow!"));
-        Serial.println(F("FIFO overflow!"));
+        //Serial.println(F("FIFO overflow!"));
         
     // otherwise, check for DMP data ready interrupt (this should happen frequently)
     } else if (mpuIntStatus & 0x02) {
@@ -212,9 +212,10 @@ void loop() {
         packet.counter++;
         uint8_t cast_packet[sizeof(packet)];
         memcpy(cast_packet, &packet, sizeof(packet));
-        
-        //bluetooth.write(cast_packet, sizeof(packet));
-        Serial.write(cast_packet, sizeof(packet));
+
+        bluetooth.write(cast_packet, sizeof(packet
+        ));
+        //Serial.write(cast_packet, sizeof(packet));
         // blink LED to indicate activity
         blinkState = !blinkState;
         digitalWrite(LED_PIN, blinkState);
