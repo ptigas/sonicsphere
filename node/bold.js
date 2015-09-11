@@ -56,12 +56,13 @@ var teapotPacket = [];
 var packetSize = 20;
 
 // Start the web view
-var io = require('socket.io')(app);
 var fs = require('fs');
 
 var app = express();
 app.use(express.static('.'));
 var server = require('http').createServer(app)
+var io = require('socket.io')(server);
+
 server.listen(settings.view_port);
 
 function handler (req, res) {
@@ -76,13 +77,6 @@ function handler (req, res) {
     res.end(data);
   });
 }
-
-io.on('connection', function (socket) {
-  socket.emit('news', { hello: 'world' });
-  socket.on('my other event', function (data) {
-    console.log(data);
-  });
-});
 
 // create Icosahedron
 var icosahedron = new sonicsphere.Icosahedron();
@@ -126,8 +120,7 @@ if (!playback) {
     }
 
     // Packet alignment
-    function align(ch) {
-        console.log(ch);
+    function align(ch) {        
         if ( !read_intro && ch == "$".charCodeAt(0) ) {
             read_intro = true;
             aligned = 0;
@@ -151,7 +144,7 @@ if (!playback) {
         } else {
             if (serialCount > 0 || ch == "$".charCodeAt(0)) {
                 teapotPacket[serialCount++] = ch;
-                if (serialCount == packetSize) {                    
+                if (serialCount == packetSize) {
                     process_packet(teapotPacket);
                     serialCount = 0;
                 }
@@ -188,7 +181,6 @@ function _playback() {
         _playback();
     });
 }
-
 
 var Quaternion = new toxi.geom.Quaternion();
 function process_packet(quat) {    

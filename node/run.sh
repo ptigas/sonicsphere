@@ -1,1 +1,1 @@
-while ((1)) {node bold.js}
+while ((1)) {node bold.js $*}

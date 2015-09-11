@@ -1,3 +1,6 @@
+var socket = io();
+socket.connect('http://127.0.0.1:3000');
+
 var icosahedron = new window.Icosahedron();
 var external_point = window.ExternalPoint;
 
@@ -119,7 +122,7 @@ function onDocumentMouseMove( event ) {
 	mouseY = event.clientY - windowHalfY;
 
 	targetRotationX = targetRotationOnMouseDownX + ( mouseX - mouseXOnMouseDown ) * 0.02;
-	targetRotationY = targetRotationOnMouseDownY + ( mouseY - mouseYOnMouseDown ) * 0.02;
+	targetRotationY = targetRotationOnMouseDownY + ( mouseY - mouseYOnMouseDown ) * 0.02;	
 }
 
 function onDocumentMouseUp( event ) {
@@ -176,18 +179,29 @@ function onWindowResize() {
 function animate() {
 	requestAnimationFrame( animate );	
 
+/*
 	//console.log(axis);
 	axis.x = targetRotationY;
 	axis.y = targetRotationX;
 
 	axis.normalize();
 
+	console.log((mouseX - mouseXOnMouseDown)  + " " + targetRotationY);
+
 	//geometry.rotation.y = geometry.rotation.y += ( targetRotation - geometry.rotation.y ) * 0.05;
 	var q = new THREE.Quaternion();
 //	q.setFromAxisAngle( axis, angle );
 //	q.set(1 + targetRotation, 1, 1, 1).normalize();
 	q.setFromAxisAngle( axis, 1);
-	icosahedron.mesh.setRotationFromQuaternion(q);
+	//icosahedron.mesh.setRotationFromQuaternion(q);
+	//icosahedron.mesh.position.applyEuler(new THREE.Euler((mouseX - mouseXOnMouseDown), (mouseY - mouseYOnMouseDown), 0, 'XYZ'));
+	var rotation = new THREE.Vector3((mouseY - mouseYOnMouseDown)*0.0002, (mouseX - mouseXOnMouseDown)*0.0002, 0);
+	//rotation.applyMatrix4(icosahedron.mesh.matrixWorld);
+
+	icosahedron.mesh.rotateX( rotation.x );
+	icosahedron.mesh.rotateY( rotation.y );
+
+	*/
 
 	// ray casting
 	icosahedron.rayCasting();
@@ -202,3 +216,8 @@ function render() {
 
 	
 }
+
+socket.on('q', function(data) {
+	var rotateQuaternion = new THREE.Quaternion(data.q[0], data.q[1], data.q[2], data.q[3]);
+	icosahedron.mesh.setRotationFromQuaternion(rotateQuaternion);
+});
