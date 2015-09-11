@@ -86,11 +86,13 @@ function init() {
 	container = document.getElementById( 'container' );
 	container.appendChild( renderer.domElement );
 
+	/*
 	stats = new Stats();
 	stats.domElement.style.position = 'absolute';
 	stats.domElement.style.top = '0px';
 	stats.domElement.style.zIndex = 100;
 	container.appendChild( stats.domElement );
+	*/
 
 	// some events
 	window.addEventListener( 'mousedown', onDocumentMouseDown, false );
@@ -154,16 +156,11 @@ function onDocumentTouchStart( event ) {
 }
 
 function onDocumentTouchMove( event ) {
-
 	if ( event.touches.length === 1 ) {
-
 		event.preventDefault();
-
 		mouseX = event.touches[ 0 ].pageX - windowHalfX;
 		targetRotation = targetRotationOnMouseDown + ( mouseX - mouseXOnMouseDown ) * 0.05;
-
 	}
-
 }
 
 function onWindowResize() {
@@ -207,9 +204,7 @@ function animate() {
 	icosahedron.rayCasting();
 
 	renderer.render( scene, camera );	
-	stats.update();	
-
-	//console.log(mesh.matrixWorld);
+	//stats.update();	
 }
 
 function render() {	

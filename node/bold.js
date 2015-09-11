@@ -1,6 +1,5 @@
 var btSerial = new (require('bluetooth-serial-port')).BluetoothSerialPort(),
     _ = require('underscore'),
-    toxi = require('toxiclibsjs'),
     osc = require('node-osc'),
     settings = require('./settings.js'),    
     express = require('express'),
@@ -80,6 +79,9 @@ function handler (req, res) {
 
 // create Icosahedron
 var icosahedron = new sonicsphere.Icosahedron();
+
+scene = new THREE.Scene();
+scene.add( icosahedron.mesh );
 
 icosahedron.rayCasting();
 
@@ -182,7 +184,6 @@ function _playback() {
     });
 }
 
-var Quaternion = new toxi.geom.Quaternion();
 function process_packet(quat) {    
     var q = [];
 
@@ -201,20 +202,14 @@ function process_packet(quat) {
     q[3] = ((quat[8] << 8) | quat[9]) / 16384.0;
     for (i = 0; i < 4; i++) if (q[i] >= 2) q[i] = -4 + q[i];
 
-    // set our toxilibs quaternion to new data
-    Quaternion.set(q[0], q[1], q[2], q[3]);
-
     var ax = to_short((quat[13] << 8) | quat[12]);
     var ay = to_short((quat[15] << 8) | quat[14]);
     var az = to_short((quat[17] << 8) | quat[16]);
 
     osc_client.send('/accel', ax, ay, az, function (err) {});
 
-    var axis = Quaternion.toAxisAngle();
-
-    icosahedron.setRotationFromQuaternion(q[0], q[1], q[2], q[3]);
-
-    var index = icosahedron.rayCasting();
+    var rotateQuaternion = new THREE.Quaternion(q[0], q[1], q[2], q[3]);    
+    var index = icosahedron.rayCasting(rotateQuaternion);
 
     // map the facet of the icosahedron to a note
     osc_client.send('/note', index, function (err) {});
