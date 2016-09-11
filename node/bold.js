@@ -62,6 +62,9 @@ app.use(express.static('.'));
 var server = require('http').createServer(app)
 var io = require('socket.io')(server);
 
+// Tell everyone already listening to the realtime socket that Bluetooth is not (yet) connected
+io.emit('status', { for: 'everyone', bluetooth_connected: false });
+
 server.listen(settings.view_port);
 
 function handler (req, res) {
@@ -103,6 +106,9 @@ if (!playback) {
                     console.log("  Connecting to serial port service channel...");
                     btSerial.connect(address, channel, function() {
                         console.log('   Successfully connected to serial port service channel');
+
+                        // Tell everyone listening to the realtime socket that the Sonicsphere is now fully connected
+                        io.emit('status', { for: 'everyone', bluetooth_connected: true });
 
                         serialCount = 0;
                         aligned = 0;
@@ -166,6 +172,10 @@ if (!playback) {
     function check_connectivity() {
         if (data_received == false) {        
             console.log("Too much time passed without a 'data' receipt from a recognized Sonicsphere device - closing Bluetooth");
+
+            // Tell everyone listening to the realtime socket that the Sonicsphere is not fully connected
+            io.emit('status', { for: 'everyone', bluetooth_connected: false });
+
             btSerial.close();
             //process.exit();
 
