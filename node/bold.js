@@ -163,9 +163,9 @@ if (!playback) {
             process.exit();
         }
         data_received = false;
-        setTimeout(check_connectivity, 1000); // 1 second
+        setTimeout(check_connectivity, 5000); // 5 seconds
     }
-    setTimeout(check_connectivity, 1000); // 1 second  
+    setTimeout(check_connectivity, 5000); // 5 seconds
 } else {
     _playback();
 }
