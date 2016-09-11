@@ -91,11 +91,18 @@ if (!playback) {
     if (bluetooth_on) {
         var data_received = false;
         btSerial.on('found', function(address, name) {
+            console.log(" Found Bluetooth device with name: " + name + ", address: " + address);
+
             if (_.contains(settings.whitelist, name)) {
-                console.log(address + " " + name);
+                console.log(" Found Sonicsphere by whitelisted device name: " + name + ", address: " + address);
+
+                console.log(" Finding serial port service channel...");
                 btSerial.findSerialPortChannel(address, function(channel) {
+                    console.log("  Found serial port service on channel: " + i_channel.toString());
+
+                    console.log("  Connecting to serial port service channel...");
                     btSerial.connect(address, channel, function() {
-                        console.log('connected');
+                        console.log('   Successfully connected to serial port service channel');
 
                         serialCount = 0;
                         aligned = 0;
@@ -107,13 +114,13 @@ if (!playback) {
                             _.map(buffer, align);
                         });
                     }, function () {
-                        console.log('cannot connect');
+                        console.log('   ERROR: Failed to connect to serial port service channel');
                     });
 
                     // close the connection when you're ready
                     btSerial.close();
                 }, function() {
-                    console.log('found nothing');
+                    console.log("  ERROR: This device doesn't appear to have a serial port service channel");
                 });
             }
         });
@@ -154,11 +161,11 @@ if (!playback) {
         }  
     }    
 
-    console.log("searching");
+    console.log("Inquiring for Bluetooth devices...");
     btSerial.inquire();
     function check_connectivity() {
         if (data_received == false) {        
-            console.log("restart.");
+            console.log("Too much time passed without a 'data' receipt from a recognized Sonicsphere device - closing Bluetooth");
             btSerial.close();
             process.exit();
         }
