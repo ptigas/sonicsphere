@@ -184,6 +184,82 @@ function _playback() {
     });
 }
 
+function quaternion_toAxisAngle(i_w, i_x, i_y, i_z)
+// From a quaternion, extract the rotation axis and angle of the rotation it represents.
+//
+// Params:
+//  i_w, i_x, i_y, i_z:
+//   (float number)
+//   The components of the quaternion.
+//
+// Returns:
+//  (array of float number)
+//  Has elements:
+//   0: Rotation angle in radians
+//   1, 2, 3: Rotation axis x, y, z
+//
+// Converted from:
+//  toxiclibs Quaternion toAxisAngle()
+//   https://bitbucket.org/postspectacular/toxiclibs/src/44d9932dbc9f9c69a170643e2d459f449562b750/src.core/toxi/geom/Quaternion.java?fileviewer=file-view-default#Quaternion.java-447
+{
+    var sa = Math.sqrt(1.0 - i_w * i_w);
+    if (sa < Number.EPSILON)
+        sa = 1.0;
+    else
+        sa = 1.0 / sa;
+
+    return [Math.acos(i_w) * 2.0,
+            i_x * sa,
+            i_y * sa,
+            i_z * sa];
+}
+
+function vec3_rotateAroundAxis(i_vector_x, i_vector_y, i_vector_z,
+                               i_axis_x, i_axis_y, i_axis_z, i_theta)
+// Rotate a vector around an axis.
+//
+// Params:
+//  i_vector_x, i_vector_y, i_vector_z:
+//   (float number)
+//   Components of vector to rotate
+//  i_axis_x, i_axis_y, i_axis_z:
+//   (float number)
+//   Components of axis to rotate around
+//  i_theta:
+//   (float number)
+//   Rotation angle in radians
+//
+// Returns:
+//  (array of 3 float numbers)
+//  x, y, z components of rotated vector
+//
+// Converted from:
+//  toxiclibs Vec3D rotateAroundAxis()
+//   https://bitbucket.org/postspectacular/toxiclibs/src/44d9932dbc9f9c69a170643e2d459f449562b750/src.core/toxi/geom/Vec3D.java?at=default&fileviewer=file-view-default#Vec3D.java-1115
+{
+    var ux = i_axis_x * i_vector_x;
+    var uy = i_axis_x * i_vector_y;
+    var uz = i_axis_x * i_vector_z;
+    var vx = i_axis_y * i_vector_x;
+    var vy = i_axis_y * i_vector_y;
+    var vz = i_axis_y * i_vector_z;
+    var wx = i_axis_z * i_vector_x;
+    var wy = i_axis_z * i_vector_y;
+    var wz = i_axis_z * i_vector_z;
+    var sinTheta = Math.sin(i_theta);
+    var cosTheta = Math.cos(i_theta);
+    return [
+        (i_axis_x * (ux + vy + wz)
+         + (i_vector_x * (i_axis_y * i_axis_y + i_axis_z * i_axis_z) - i_axis_x * (vy + wz)) * cosTheta
+         + (-wy + vz) * sinTheta),
+        (i_axis_y * (ux + vy + wz)
+         + (i_vector_y * (i_axis_x * i_axis_x + i_axis_z * i_axis_z) - i_axis_y * (ux + wz)) * cosTheta
+         + (wx - uz) * sinTheta),
+        (i_axis_z * (ux + vy + wz)
+         + (i_vector_z * (i_axis_x * i_axis_x + i_axis_y * i_axis_y) - i_axis_z * (ux + vy)) * cosTheta
+         + (-vx + uy) * sinTheta)];
+}
+
 function process_packet(quat) {    
     var q = [];
 
@@ -202,12 +278,36 @@ function process_packet(quat) {
     q[3] = ((quat[8] << 8) | quat[9]) / 16384.0;
     for (i = 0; i < 4; i++) if (q[i] >= 2) q[i] = -4 + q[i];
 
+    //// Send quaternion raw components in OSC "/quat" message
+    //// (commented out because unused)
+    //osc_client.send("/quat", q[0], q[1], q[2], q[3], function (err) {});
+
     var ax = to_short((quat[13] << 8) | quat[12]);
     var ay = to_short((quat[15] << 8) | quat[14]);
     var az = to_short((quat[17] << 8) | quat[16]);
 
     osc_client.send('/accel', ax, ay, az, function (err) {});
 
+    // Get axis and angle of rotation from quaternion
+    // and send in OSC "/axis" message
+    var axisAngle = quaternion_toAxisAngle(q[0], q[1], q[2], q[3]);
+    osc_client.send("/axis", axisAngle[0], -axisAngle[1], axisAngle[3], axisAngle[2], function (err) {});
+
+    // Rotate vec3(-1, 1, 1) around above axis by above angle
+    // (kind of... choice of initial vector and sign quirks are copied from the Processing version),
+    // then normalize it
+    // and send in OSC "/v" message
+    // (The Ableton project uses this for pitch bend)
+    var vr = vec3_rotateAroundAxis(-1, 1, 1,
+                                   -axisAngle[1], axisAngle[3], axisAngle[2],
+                                   -axisAngle[0]);
+    var vrNorm = Math.sqrt(vr[0]*vr[0] + vr[1]*vr[1] + vr[2]*vr[2]);
+    vr[0] /= vrNorm;
+    vr[1] /= vrNorm;
+    vr[2] /= vrNorm;
+    osc_client.send("/v", vr[0], vr[1], vr[2], function (err) {});
+
+    //
     var rotateQuaternion = new THREE.Quaternion(q[0], q[1], q[2], q[3]);    
     var index = icosahedron.rayCasting(rotateQuaternion);
 
