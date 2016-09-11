@@ -167,7 +167,11 @@ if (!playback) {
         if (data_received == false) {        
             console.log("Too much time passed without a 'data' receipt from a recognized Sonicsphere device - closing Bluetooth");
             btSerial.close();
-            process.exit();
+            //process.exit();
+
+            // Re-inquire for Bluetooth devices
+            console.log("Inquiring for Bluetooth devices...");
+            bluetoothSerialPort.inquire();
         }
         data_received = false;
         setTimeout(check_connectivity, 5000); // 5 seconds
