@@ -9,11 +9,12 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "bluetooth-serial-port": "^1.2.4",
-    "express": "^4.13.3",
-    "node-osc": "^1.1.0",
-    "three": "^0.71.1",
-    "toxiclibsjs": "^0.2.7",
-    "underscore": "^1.8.3"
+    "bluetooth-serial-port": "^1.2.6",
+    "express": "^4.14.0",
+    "node-osc": "^2.0.3",
+    "three": "^0.80.1",
+    "toxiclibsjs": "^0.3.2",
+    "underscore": "^1.8.3",
+    "socket.io": "^1.4.8"
   }
 }
